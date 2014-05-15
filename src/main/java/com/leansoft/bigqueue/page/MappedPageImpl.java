@@ -6,11 +6,12 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MappedPageImpl implements IMappedPage, Closeable {
 	
-	private final static Logger logger = Logger.getLogger(MappedPageImpl.class);
+	private final static Logger logger = LoggerFactory.getLogger(MappedPageImpl.class);
 	
 	private ThreadLocalByteBuffer threadLocalBuffer;
 	private volatile boolean dirty = false;
@@ -37,7 +38,7 @@ public class MappedPageImpl implements IMappedPage, Closeable {
 			
 			closed = true;
 			if (logger.isDebugEnabled()) {
-				logger.debug("Mapped page for " + this.pageFile + " was just unmapped and closed.");
+				logger.debug("Mapped page for {} was just unmapped and closed.", this.pageFile);
 			}
 		}
 	}
@@ -56,7 +57,7 @@ public class MappedPageImpl implements IMappedPage, Closeable {
 				srcBuf.force(); // flush the changes
 				dirty = false;
 				if (logger.isDebugEnabled()) {
-					logger.debug("Mapped page for " + this.pageFile + " was just flushed.");
+					logger.debug("Mapped page for {} was just flushed.", this.pageFile);
 				}
 			}
 		}

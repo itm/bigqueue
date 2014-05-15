@@ -50,7 +50,8 @@ public class BigQueueImpl implements IBigQueue {
 
     // lock for dequeueFuture access
     private final Object futureLock = new Object();
-    private SettableFuture<IBigQueue> dequeueFuture;
+    private SettableFuture<byte[]> dequeueFuture;
+    private SettableFuture<byte[]> peekFuture;
 
     /**
      * A big, fast and persistent queue implementation,
@@ -95,7 +96,7 @@ public class BigQueueImpl implements IBigQueue {
     public void enqueue(byte[] data) throws IOException {
         this.innerArray.append(data);
 
-        this.completeFuture();
+        this.completeFutures();
     }
 
 
@@ -121,11 +122,6 @@ public class BigQueueImpl implements IBigQueue {
             ByteBuffer queueFrontIndexBuffer = queueFrontIndexPage.getLocal(0);
             queueFrontIndexBuffer.putLong(nextQueueFrontIndex);
             queueFrontIndexPage.setDirty(true);
-
-            if (this.isEmpty()) {
-                this.invalidateFuture();
-            }
-
             return data;
         } finally {
             queueFrontWriteLock.unlock();
@@ -134,45 +130,12 @@ public class BigQueueImpl implements IBigQueue {
     }
 
     @Override
-    public ListenableFuture<IBigQueue> queueReadyForDequeue() {
-        this.initializeFutureIfNecessary();
+    public ListenableFuture<byte[]> dequeueAsync() {
+        this.initializeDequeueFutureIfNecessary();
         return dequeueFuture;
-
     }
 
-    /**
-     * Completes the dequeue future
-     */
-    private void completeFuture() {
-        synchronized (futureLock) {
-            if (dequeueFuture != null) {
-                dequeueFuture.set(this);
-            }
-        }
-    }
 
-    /**
-     * Initializes the futures if it's null at the moment
-     */
-    private void initializeFutureIfNecessary() {
-        synchronized (futureLock) {
-            if (dequeueFuture == null) {
-                dequeueFuture = SettableFuture.create();
-            }
-            if (!this.isEmpty()) {
-                dequeueFuture.set(this);
-            }
-        }
-    }
-
-    /**
-     * Resets the future to null
-     */
-    private void invalidateFuture() {
-        synchronized (futureLock) {
-           dequeueFuture = null;
-        }
-    }
 
     @Override
     public void removeAll() throws IOException {
@@ -184,7 +147,6 @@ public class BigQueueImpl implements IBigQueue {
             ByteBuffer queueFrontIndexBuffer = queueFrontIndexPage.getLocal(0);
             queueFrontIndexBuffer.putLong(0L);
             queueFrontIndexPage.setDirty(true);
-            this.invalidateFuture();
         } finally {
             queueFrontWriteLock.unlock();
         }
@@ -197,6 +159,12 @@ public class BigQueueImpl implements IBigQueue {
         }
         byte[] data = this.innerArray.get(this.queueFrontIndex.get());
         return data;
+    }
+
+    @Override
+    public ListenableFuture<byte[]> peekAsync() {
+        this.initializePeekFutureIfNecessary();
+        return peekFuture;
     }
 
     /**
@@ -228,11 +196,17 @@ public class BigQueueImpl implements IBigQueue {
             this.queueFrontIndexPageFactory.releaseCachedPages();
         }
 
-        if (dequeueFuture != null) {
+
+        synchronized (futureLock) {
             /* Cancel the future but don't interrupt running tasks
             because they might perform further work not refering to the queue
              */
-            dequeueFuture.cancel(false);
+            if (peekFuture != null) {
+                peekFuture.cancel(false);
+            }
+            if (dequeueFuture != null) {
+                dequeueFuture.cancel(false);
+            }
         }
 
         this.innerArray.close();
@@ -273,6 +247,65 @@ public class BigQueueImpl implements IBigQueue {
             return (qRear - qFront);
         } else {
             return Long.MAX_VALUE - qFront + 1 + qRear;
+        }
+    }
+
+
+    /**
+     * Completes the dequeue future
+     */
+    private void completeFutures() {
+        synchronized (futureLock) {
+            if (peekFuture != null && !peekFuture.isDone()) {
+                try {
+                    peekFuture.set(this.peek());
+                } catch (IOException e) {
+                    peekFuture.setException(e);
+                }
+            }
+            if (dequeueFuture != null && !dequeueFuture.isDone()) {
+                try {
+                    dequeueFuture.set(this.dequeue());
+                } catch (IOException e) {
+                    dequeueFuture.setException(e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Initializes the futures if it's null at the moment
+     */
+    private void initializeDequeueFutureIfNecessary() {
+        synchronized (futureLock) {
+            if (dequeueFuture == null || dequeueFuture.isDone()) {
+                dequeueFuture = SettableFuture.create();
+            }
+            if (!this.isEmpty()) {
+                try {
+                    dequeueFuture.set(this.dequeue());
+                } catch (IOException e) {
+                    dequeueFuture.setException(e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Initializes the futures if it's null at the moment
+     */
+    private void initializePeekFutureIfNecessary() {
+        synchronized (futureLock) {
+            if (peekFuture == null || peekFuture.isDone()) {
+                peekFuture = SettableFuture.create();
+            }
+            if (!this.isEmpty()) {
+                try {
+                    peekFuture.set(this.peek());
+                } catch (IOException e) {
+                    peekFuture.setException(e);
+                }
+            }
         }
     }
 
