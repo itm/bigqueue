@@ -1,22 +1,17 @@
 package com.leansoft.bigqueue.page;
 
+import com.leansoft.bigqueue.cache.ILRUCache;
+import com.leansoft.bigqueue.cache.LRUCacheImpl;
+import com.leansoft.bigqueue.utils.FileUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
-import org.apache.log4j.Logger;
-
-import com.leansoft.bigqueue.cache.ILRUCache;
-import com.leansoft.bigqueue.cache.LRUCacheImpl;
-import com.leansoft.bigqueue.utils.FileUtil;
+import java.util.*;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 
@@ -32,7 +27,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
  */
 public class MappedPageFactoryImpl implements IMappedPageFactory {
 	
-	private final static Logger logger = Logger.getLogger(MappedPageFactoryImpl.class);
+	private final static Logger logger = LoggerFactory.getLogger(MappedPageFactoryImpl.class);
 	
 	private int pageSize;
 	private String pageDir;
@@ -87,7 +82,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 							mpi = new MappedPageImpl(mbb, fileName, index);
 							cache.put(index, mpi, ttl);
 							if (logger.isDebugEnabled()) {
-								logger.debug("Mapped page for " + fileName + " was just created and cached.");
+								logger.debug("Mapped page for {} was just created and cached.", fileName);
 							}
 						} finally {
 							if (channel != null) channel.close();
@@ -102,7 +97,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 			}
 	    } else {
 	    	if (logger.isDebugEnabled()) {
-	    		logger.debug("Hit mapped page " + mpi.getPageFile() + " in cache.");
+	    		logger.debug("Hit mapped page {} in cache.", mpi.getPageFile());
 	    	}
 	    }
 	
@@ -143,7 +138,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		Set<Long> indexSet = getExistingBackFileIndexSet();
 		this.deletePages(indexSet);
 		if (logger.isDebugEnabled()) {
-			logger.debug("All page files in dir " + this.pageDir + " have been deleted.");
+			logger.debug("All page files in dir {} have been deleted.", this.pageDir);
 		}
 	}
 	
@@ -181,14 +176,14 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 				}
 				count++;
 				if (logger.isDebugEnabled()) {
-					logger.warn("fail to delete file " + fileName + ", tried round = " + count);
+					logger.warn("fail to delete file {}, tried round = {}",fileName, count);
 				}
 			}
 		}
 		if (deleted) {
-			logger.info("Page file " + fileName + " was just deleted.");
+			logger.info("Page file {} was just deleted.", fileName);
 		} else {
-			logger.warn("fail to delete file " + fileName + " after max " + maxRound + " rounds of try, you may delete it manually.");
+			logger.warn("fail to delete file {} after max {} rounds of try, you may delete it manually.", fileName, maxRound);
 		}
 	}
 
@@ -228,7 +223,7 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 		Set<Long> indexSet = this.getPageIndexSetBefore(timestamp);
 		this.deletePages(indexSet);
 		if (logger.isDebugEnabled()) {
-			logger.debug("All page files in dir [" + this.pageDir + "], before [" + timestamp + "] have been deleted.");
+			logger.debug("All page files in dir [{}], before [{}] have been deleted.", this.pageDir, timestamp);
 		}
 	}
 
