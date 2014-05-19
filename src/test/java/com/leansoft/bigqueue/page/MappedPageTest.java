@@ -151,7 +151,7 @@ public class MappedPageTest {
 					}
 					
 				} catch (IOException e) {
-					fail("Got IOException when acquiring page " + i);
+					fail("Got IOException when acquiring page " + i +": "+e);
 				}
 			}
 		}
