@@ -307,7 +307,7 @@ public class MappedPageFactoryTest {
 					pages[i] = this.pageFactory.acquirePage(i);
 					this.pageFactory.releasePage(i);
 				} catch (IOException e) {
-					fail("Got IOException when acquiring page " + i);
+					fail("Got IOException when acquiring page " + i +": "+e);
 				}
 			}
 		}
