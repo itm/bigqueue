@@ -78,7 +78,15 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 							String fileName = this.getFileNameByIndex(index);
 							raf = new RandomAccessFile(fileName, "rw");
 							channel = raf.getChannel();
-							MappedByteBuffer mbb = channel.map(READ_WRITE, 0, this.pageSize);
+							MappedByteBuffer mbb = null;
+                            // FIXME: ugly quick fix for the address space issue:
+                            try {
+                                mbb = channel.map(READ_WRITE, 0, this.pageSize);
+                            } catch (IOException e ) {
+                                System.gc();
+                                System.runFinalization();
+                                mbb = channel.map(READ_WRITE, 0, this.pageSize);
+                            }
 							mpi = new MappedPageImpl(mbb, fileName, index);
 							cache.put(index, mpi, ttl);
 							if (logger.isDebugEnabled()) {
