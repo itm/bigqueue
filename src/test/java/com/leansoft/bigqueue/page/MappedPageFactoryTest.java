@@ -305,11 +305,11 @@ public class MappedPageFactoryTest {
 			for(int i : pageNumList) {
 				try {
 					pages[i] = this.pageFactory.acquirePage(i);
-					this.pageFactory.releasePage(i);
 				} catch (IOException e) {
-					fail("Got IOException when acquiring page " + i +": "+e);
-				}
-			}
+                    fail("Got IOException when acquiring page " + i +": "+e);
+                }
+                this.pageFactory.releasePage(i);
+            }
 		}
 	}
 }

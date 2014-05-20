@@ -172,7 +172,7 @@ public class FanOutQueueTest {
 	}
 	
 	
-	@Test
+	@Test(expected = IndexOutOfBoundsException.class)
 	public void resetQueueFrontIndexTest() throws IOException {
 		foQueue = new FanOutQueueImpl(testDir, "reset_queue_front_index");
 		assertNotNull(foQueue);
@@ -196,13 +196,9 @@ public class FanOutQueueTest {
 		
 		foQueue.resetQueueFrontIndex(fid, loop);
 		assertNull(foQueue.peek(fid));
-		
-		try {
-			foQueue.resetQueueFrontIndex(fid, loop + 1);
-			fail("should throw IndexOutOfBoundsException");
-		} catch (IndexOutOfBoundsException e) {
-			// expeced
-		}
+
+        foQueue.resetQueueFrontIndex(fid, loop + 1);
+
 	}
 	
 	@Test
@@ -233,7 +229,7 @@ public class FanOutQueueTest {
 		
 		foQueue.removeBefore(timestamp);
 		
-		assertTrue(foQueue.size(fid) == 2 * 1024 * 1024);
+		assertEquals(2 * 1024 * 1024, foQueue.size(fid));
 		assertEquals(randomString2, new String(foQueue.peek(fid)));
 	}
 	
@@ -300,7 +296,7 @@ public class FanOutQueueTest {
 		
 		for(int i = 0; i < loop; i++) {
 			long index = foQueue.findClosestIndex(tsArray[i]);
-			assertTrue(index == i);
+			assertEquals(i, index);
 		}
 	}
 	
@@ -328,21 +324,21 @@ public class FanOutQueueTest {
 		assertEquals(3 * oneM, foQueue.size("test"));
 		assertEquals(randomString1, new String(foQueue.dequeue("test")));
 		assertEquals(randomString1, new String(foQueue.get(0)));
-		assertTrue(6 * 32 * oneM == foQueue.getBackFileSize() );
+        assertEquals(foQueue.getBackFileSize(), 6 * 32 * oneM);
 		
 		foQueue.limitBackFileSize(oneM * 4 * 32);
 		assertEquals(2 * oneM, foQueue.size("test"));
-		assertTrue(4 * 32 * oneM == foQueue.getBackFileSize() );
+		assertEquals(foQueue.getBackFileSize(), 4 * 32 * oneM);
 		assertEquals(randomString2, new String(foQueue.dequeue("test")));
 		
 		foQueue.limitBackFileSize(oneM * 2 * 32);
 		assertEquals(1 * oneM, foQueue.size("test"));
-		assertTrue(2 * 32 * oneM == foQueue.getBackFileSize() );
+        assertEquals(foQueue.getBackFileSize(), 2 * 32 * oneM);
 		assertEquals(randomString3, new String(foQueue.dequeue("test")));
 		
 		foQueue.limitBackFileSize(oneM * 32); // will be ignore
 		assertEquals(1 * oneM - 1, foQueue.size("test"));
-		assertTrue(2 * 32 * oneM == foQueue.getBackFileSize() );
+        assertEquals(foQueue.getBackFileSize(), 2 * 32 * oneM);
 		assertEquals(randomString3, new String(foQueue.dequeue("test")));		
 	}
 	
@@ -351,6 +347,7 @@ public class FanOutQueueTest {
 	public void clean() throws IOException {
 		if (foQueue != null) {
 			foQueue.removeAll();
+            foQueue.close();
 		}
 	}
 
