@@ -256,11 +256,11 @@ public class BigArrayUnitTest {
 	public void getBackFileSizeTest() throws IOException {
 	    bigArray = new BigArrayImpl(testDir, "get_back_file_size_test");
 		assertNotNull(bigArray);
-		
-		assertTrue(bigArray.getBackFileSize() == 0);
+
+        assertEquals(0, bigArray.getBackFileSize());
 		
 		bigArray.append("hello".getBytes());
-		assertTrue(bigArray.getBackFileSize() == BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
+        assertEquals(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize(), bigArray.getBackFileSize());
 		
 		long loop = 3000000;
 		String randomString = TestUtil.randomString(256);
@@ -270,34 +270,34 @@ public class BigArrayUnitTest {
 		
 		long realSize = bigArray.getBackFileSize();
 		long expectedSize = BigArrayImpl.INDEX_PAGE_SIZE * 3 + bigArray.getDataPageSize() * 6;
-		
-		assertTrue(expectedSize == realSize);
+
+        assertEquals(realSize, expectedSize);
 		
 		bigArray.removeBeforeIndex(loop / 2);
 		
 		realSize = bigArray.getBackFileSize();
 		expectedSize = BigArrayImpl.INDEX_PAGE_SIZE * 2 + bigArray.getDataPageSize() * 4;
-		
-		assertTrue(expectedSize == realSize);
+
+        assertEquals(realSize, expectedSize);
 		
 		bigArray.removeAll();
-		
-		assertTrue(bigArray.getBackFileSize() == 0);
+
+        assertEquals(0, bigArray.getBackFileSize());
 	}
 	
 	@Test
 	public void limitBackFileSize() throws IOException {
 	    bigArray = new BigArrayImpl(testDir, "limit_back_file_size_test");
 		assertNotNull(bigArray);
-		
-		assertTrue(bigArray.getBackFileSize() == 0);
+
+        assertEquals(0, bigArray.getBackFileSize());
 		
 		bigArray.append("hello".getBytes());
-		assertTrue(bigArray.getBackFileSize() == BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
+        assertEquals(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize(), bigArray.getBackFileSize());
 		
 		
 		bigArray.limitBackFileSize(bigArray.getDataPageSize()); // no effect
-		assertTrue(bigArray.getBackFileSize() == BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
+        assertEquals(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize(), bigArray.getBackFileSize());
 		
 		long loop = 3000000;
 		String randomString = TestUtil.randomString(256);
@@ -306,24 +306,24 @@ public class BigArrayUnitTest {
 		}
 		
 		bigArray.limitBackFileSize(BigArrayImpl.INDEX_PAGE_SIZE * 2 + bigArray.getDataPageSize() * 3);
-		assertTrue(bigArray.getBackFileSize() <= BigArrayImpl.INDEX_PAGE_SIZE * 2 + bigArray.getDataPageSize() * 3);
+		assertTrue(BigArrayImpl.INDEX_PAGE_SIZE * 2 + bigArray.getDataPageSize() * 3 >= bigArray.getBackFileSize());
 		assertTrue(bigArray.getBackFileSize() > BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize() * 2);
 		long lastTailIndex = bigArray.getTailIndex();
 		assertTrue(lastTailIndex > 0);
-		assertTrue(bigArray.getHeadIndex() == loop + 1);
+        assertEquals(loop + 1, bigArray.getHeadIndex());
 		
 		bigArray.limitBackFileSize(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize() * 2);
 		assertTrue(bigArray.getBackFileSize() <= BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize() * 2);
 		assertTrue(bigArray.getBackFileSize() > BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
 		assertTrue(bigArray.getTailIndex() > lastTailIndex);
 		lastTailIndex = bigArray.getTailIndex();
-		assertTrue(bigArray.getHeadIndex() == loop + 1);
+        assertEquals(loop + 1, bigArray.getHeadIndex());
 		
 		bigArray.limitBackFileSize(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
-		assertTrue(bigArray.getBackFileSize() == BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize());
+        assertEquals(BigArrayImpl.INDEX_PAGE_SIZE + bigArray.getDataPageSize(), bigArray.getBackFileSize());
 		assertTrue(bigArray.getTailIndex() > lastTailIndex);
 		lastTailIndex = bigArray.getTailIndex();
-		assertTrue(bigArray.getHeadIndex() == loop + 1);
+        assertEquals(loop + 1, bigArray.getHeadIndex());
 		
 		bigArray.append("world".getBytes());
 		
