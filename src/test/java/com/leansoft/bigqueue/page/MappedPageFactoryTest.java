@@ -172,8 +172,10 @@ public class MappedPageFactoryTest {
 	public void clear() throws IOException {
 		if (this.mappedPageFactory != null) {
 			this.mappedPageFactory.deleteAllPages();
+            this.mappedPageFactory = null;
 		}
 		FileUtil.deleteDirectory(new File(testDir));
+        System.gc();
 	}
 	
 	@Test
@@ -263,7 +265,7 @@ public class MappedPageFactoryTest {
 		IMappedPage[] firstPageArray = sharedMap.get(0);
 		for(int j = 0; j < pageNumLimit; j++) {
 			IMappedPage page = firstPageArray[j];
-			assertTrue(!page.isClosed());
+            assertFalse(page.isClosed());
 		}
 		for(int i = 1; i < threadNum; i++) {
 			IMappedPage[] pageArray = sharedMap.get(i);
