@@ -74,9 +74,11 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 					if (mpi == null) {
 						RandomAccessFile raf = null;
 						FileChannel channel = null;
+                        String fileName = "(invalid)";
 						try {
-							String fileName = this.getFileNameByIndex(index);
+							fileName = this.getFileNameByIndex(index);
 							raf = new RandomAccessFile(fileName, "rw");
+
 							channel = raf.getChannel();
 							MappedByteBuffer mbb = channel.map(READ_WRITE, 0, this.pageSize);
 							mpi = new MappedPageImpl(mbb, fileName, index);
@@ -84,7 +86,9 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 							if (logger.isDebugEnabled()) {
 								logger.debug("Mapped page for {} was just created and cached.", fileName);
 							}
-						} finally {
+						} catch (IOException exception) {
+                          throw new IOException("Failed to map range [0,"+this.pageSize+"] of file \""+fileName+"\" to memory. Original reason: "+exception);
+                        } finally {
 							if (channel != null) channel.close();
 							if (raf != null) raf.close();
 						}
