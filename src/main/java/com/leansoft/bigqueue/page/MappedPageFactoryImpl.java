@@ -3,6 +3,7 @@ package com.leansoft.bigqueue.page;
 import com.leansoft.bigqueue.cache.ILRUCache;
 import com.leansoft.bigqueue.cache.LRUCacheImpl;
 import com.leansoft.bigqueue.utils.FileUtil;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,46 +61,49 @@ public class MappedPageFactoryImpl implements IMappedPageFactory {
 
 	public IMappedPage acquirePage(long index) throws IOException {
 		MappedPageImpl mpi = cache.get(index);
-		if (mpi == null) { // not in cache, need to create one
-			try {
-				Object lock = null;
-				synchronized(mapLock) {
-					if (!pageCreationLockMap.containsKey(index)) {
-						pageCreationLockMap.put(index, new Object());
-					}
-					lock = pageCreationLockMap.get(index);
-				}
-				synchronized(lock) { // only lock the creation of page index
-					mpi = cache.get(index); // double check
-					if (mpi == null) {
-						RandomAccessFile raf = null;
-						FileChannel channel = null;
+        if (mpi == null) { // not in cache, need to create one
+            try {
+                Object lock = null;
+                synchronized (mapLock) {
+                    if (!pageCreationLockMap.containsKey(index)) {
+                        pageCreationLockMap.put(index, new Object());
+                    }
+                    lock = pageCreationLockMap.get(index);
+                }
+                synchronized (lock) { // only lock the creation of page index
+                    mpi = cache.get(index); // double check
+                    if (mpi == null) {
+                        RandomAccessFile raf = null;
+                        FileChannel channel = null;
                         String fileName = "(invalid)";
-						try {
-							fileName = this.getFileNameByIndex(index);
-							raf = new RandomAccessFile(fileName, "rw");
+                        fileName = this.getFileNameByIndex(index);
+                        raf = new RandomAccessFile(fileName, "rw");
 
-							channel = raf.getChannel();
-							MappedByteBuffer mbb = channel.map(READ_WRITE, 0, this.pageSize);
-							mpi = new MappedPageImpl(mbb, fileName, index);
-							cache.put(index, mpi, ttl);
-							if (logger.isDebugEnabled()) {
-								logger.debug("Mapped page for {} was just created and cached.", fileName);
-							}
-						} catch (IOException exception) {
-                          throw new IOException("Failed to map range [0,"+this.pageSize+"] of file \""+fileName+"\" to memory. Original reason: "+exception);
+                        channel = raf.getChannel();
+                        MappedByteBuffer mbb = null;
+                        try {
+                            mbb = channel.map(READ_WRITE, 0, this.pageSize);
+                        } catch (IOException e) {
+                            System.gc();
+                            System.runFinalization();
+                            mbb = channel.map(READ_WRITE, 0, this.pageSize);
                         } finally {
-							if (channel != null) channel.close();
-							if (raf != null) raf.close();
-						}
-					}
-				}
-			} finally {
-				synchronized(mapLock) {
-					pageCreationLockMap.remove(index);
-				}
-			}
-	    } else {
+                            if (channel != null) channel.close();
+                            if (raf != null) raf.close();
+                        }
+                        mpi = new MappedPageImpl(mbb, fileName, index);
+                        cache.put(index, mpi, ttl);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Mapped page for {} was just created and cached.", fileName);
+                        }
+                    }
+                }
+            } finally {
+                synchronized (mapLock) {
+                    pageCreationLockMap.remove(index);
+                }
+            }
+        } else {
 	    	if (logger.isDebugEnabled()) {
 	    		logger.debug("Hit mapped page {} in cache.", mpi.getPageFile());
 	    	}
