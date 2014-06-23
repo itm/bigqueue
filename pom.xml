@@ -185,6 +185,7 @@
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
                         <exclude>**/*PerfTest.java</exclude>
+                        <exclude>**/MappedPageFactoryTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
